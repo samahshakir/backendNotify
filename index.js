@@ -59,7 +59,7 @@ async function connectToDatabase() {
 }
 
 // Routes
-app.get("/api", (req, res) => {
+app.get("/", (req, res) => {
   res.json({ message: "Notification Server is running" });
 });
 
