@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon api/index.js",
     "start": "node api/index.js",
+    "deploy": "vercel deploy --prod",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
