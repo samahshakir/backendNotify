@@ -7,6 +7,7 @@ require("dotenv").config();
 
 // Create Express instance
 const app = express();
+// const PORT = process.env.PORT || 3000;
 
 // Initialize Firebase Admin
 try {
@@ -14,7 +15,7 @@ try {
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     }),
   });
 } catch (error) {
@@ -87,23 +88,40 @@ app.post("/api/register-device", async (req, res) => {
 
 app.post("/api/send-notification", async (req, res) => {
   try {
-    await connectToDatabase();
-    const { targetCode, title, body, senderCode } = req.body;
+    console.log("Incoming request body:", req.body);
 
+    await connectToDatabase();
+    console.log("Database connected successfully");
+
+    const { targetCode, title, body, senderCode } = req.body;
+    console.log("Parsed request data:", {
+      targetCode,
+      title,
+      body,
+      senderCode,
+    });
+
+    // Validation logs
     if (!targetCode || targetCode.length !== 6) {
+      console.error("Invalid target code:", targetCode);
       return res.status(400).json({ error: "Invalid target code" });
     }
     if (!title || title.trim().length === 0) {
+      console.error("Title is required but not provided");
       return res.status(400).json({ error: "Title is required" });
     }
     if (!body || body.trim().length === 0) {
+      console.error("Message body is required but not provided");
       return res.status(400).json({ error: "Message body is required" });
     }
 
+    // Device lookup
     const device = await Device.findOne({ code: targetCode });
     if (!device) {
+      console.error("Device not found for code:", targetCode);
       return res.status(404).json({ error: "Device not found" });
     }
+    console.log("Device found:", device);
 
     const message = {
       token: device.fcmToken,
@@ -116,8 +134,12 @@ app.post("/api/send-notification", async (req, res) => {
         timestamp: new Date().toISOString(),
       },
     };
+    console.log("Message prepared for Firebase:", message);
 
+    // Firebase Messaging
     const response = await admin.messaging().send(message);
+    console.log("Notification sent successfully:", response);
+
     res.status(200).json({ message: "Notification sent successfully" });
   } catch (error) {
     console.error("Notification error:", error);
@@ -148,5 +170,8 @@ if (process.env.NODE_ENV === "development") {
   });
 }
 
-// Export the Express API
+// app.listen(PORT, "0.0.0.0", () => {
+//   console.log(`Server running on http://localhost:${PORT}`);
+// });
+
 module.exports = app;
