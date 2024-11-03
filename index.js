@@ -40,7 +40,6 @@ const deviceSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 86400, // Automatically delete after 24 hours
   },
 });
 
@@ -73,11 +72,13 @@ app.post("/api/register-device", async (req, res) => {
       return res.status(400).json({ error: "Invalid input" });
     }
 
-    const device = await Device.findOneAndUpdate(
-      { code },
-      { code, fcmToken },
-      { upsert: true, new: true }
-    );
+    const device = await Device.findOne({ code });
+    if (device) {
+      device.fcmToken = fcmToken;
+      await device.save();
+    } else {
+      await Device.create({ code, fcmToken });
+    }
 
     res.status(200).json({ message: "Device registered successfully", device });
   } catch (error) {
